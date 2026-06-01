@@ -183,7 +183,7 @@
   .group-btn:hover { border-color: var(--verde); color: var(--verde); }
   .group-btn.active { background: var(--azul); color: #fff; border-color: var(--azul); }
   .group-btn.brasil-grp { border-color: var(--verde); color: var(--verde); }
-  .group-btn.brasil-grp.active { background: var(--verde); border-color: var(--verde); }
+  .group-btn.brasil-grp.active { background: var(--verde); border-color: var(--verde); color: #fff; }
 
   @media (max-width: 420px) { .header-title { font-size: 30px; } .team-flag { font-size: 24px; } .tab { font-size: 11px; } }
 </style>
@@ -630,7 +630,7 @@ async function renderRanking(){
 }
 
 let _standingsCache=null;
-let _activeGroup='C';
+let _activeGroup=null;
 
 async function renderTabela(){
   const el=document.getElementById('tabela-content');
@@ -645,10 +645,11 @@ async function renderTabela(){
     </div>
   </div>`;
 
-  // Navegação de grupos
   const groupLetters=['A','B','C','D','E','F','G','H','I','J','K','L'];
   h+=`<p class="sec-title"><span class="sec-dot"></span> Classificação por grupo</p>`;
+  h+=`<p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Clique num grupo para filtrar · <span style="color:var(--verde);font-weight:600">Grupo C</span> = Brasil</p>`;
   h+=`<div class="group-nav">`;
+  h+=`<button class="group-btn${_activeGroup===null?' active':''}" onclick="selectGroup(null)">Todos</button>`;
   for(const g of groupLetters){
     const isBr=g==='C';
     h+=`<button class="group-btn${isBr?' brasil-grp':''}${g===_activeGroup?' active':''}" onclick="selectGroup('${g}')">Grupo ${g}</button>`;
@@ -663,7 +664,10 @@ async function renderTabela(){
 function selectGroup(g){
   _activeGroup=g;
   document.querySelectorAll('.group-btn').forEach(b=>{
-    b.classList.toggle('active', b.textContent.trim()==='Grupo '+g);
+    const label=b.textContent.trim();
+    const isAll=label==='Todos' && g===null;
+    const isMatch=label==='Grupo '+g;
+    b.classList.toggle('active', isAll||isMatch);
   });
   loadStandings(g);
 }
@@ -672,53 +676,47 @@ async function loadStandings(group){
   const area=document.getElementById('standings-area');
   if(!area) return;
 
-  // Usa cache se disponível e recente (5 min)
   const now=Date.now();
   if(_standingsCache && _standingsCache.ts && (now-_standingsCache.ts)<300000){
-    renderStandingsGroup(_standingsCache.data, group);
+    renderAllStandings(_standingsCache.data, group);
     return;
   }
 
   area.innerHTML=`<div class="tabela-loading"><span class="spinner"></span> Carregando...</div>`;
 
   const resp = await apiGetStandings();
-  if(resp && resp.standings){
+  if(resp && resp.standings && Object.keys(resp.standings).length>0){
     _standingsCache = { data: resp.standings, ts: now };
-    renderStandingsGroup(resp.standings, group);
+    renderAllStandings(resp.standings, group);
   } else {
-    // Fallback: mostra tabela estática sem pontos
-    renderStandingsStatic(group);
+    renderAllStatic(group);
   }
 }
 
-function renderStandingsGroup(standings, group){
-  const area=document.getElementById('standings-area');
-  if(!area) return;
-  const grpData=standings[group];
-  if(!grpData || !grpData.length){ renderStandingsStatic(group); return; }
+const flagMap={
+  'Brazil':'fi-br','Morocco':'fi-ma','Haiti':'fi-ht','Scotland':'fi-gb-sct',
+  'Mexico':'fi-mx','South Africa':'fi-za','Korea Republic':'fi-kr','Denmark':'fi-dk',
+  'Canada':'fi-ca','Qatar':'fi-qa','Switzerland':'fi-ch','Italy':'fi-it',
+  'USA':'fi-us','Paraguay':'fi-py','Australia':'fi-au','Turkey':'fi-tr',
+  'Germany':'fi-de','Curacao':'fi-cw',"Côte d'Ivoire":'fi-ci','Ecuador':'fi-ec',
+  'Netherlands':'fi-nl','Japan':'fi-jp','Tunisia':'fi-tn','Ukraine':'fi-ua',
+  'Belgium':'fi-be','Egypt':'fi-eg','Iran':'fi-ir','New Zealand':'fi-nz',
+  'Spain':'fi-es','Cape Verde':'fi-cv','Saudi Arabia':'fi-sa','Uruguay':'fi-uy',
+  'France':'fi-fr','Senegal':'fi-sn','Norway':'fi-no','Iraq':'fi-iq',
+  'Argentina':'fi-ar','Algeria':'fi-dz','Austria':'fi-at','Jordan':'fi-jo',
+  'Portugal':'fi-pt','Uzbekistan':'fi-uz','Colombia':'fi-co','DR Congo':'fi-cd',
+  'England':'fi-gb-eng','Croatia':'fi-hr','Ghana':'fi-gh','Panama':'fi-pa',
+};
 
-  // Mapeia código de time para bandeira
-  const flagMap={
-    'Brazil':'fi-br','Morocco':'fi-ma','Haiti':'fi-ht','Scotland':'fi-gb-sct',
-    'Mexico':'fi-mx','South Africa':'fi-za','Korea Republic':'fi-kr','Denmark':'fi-dk',
-    'Canada':'fi-ca','Qatar':'fi-qa','Switzerland':'fi-ch','Italy':'fi-it',
-    'USA':'fi-us','Paraguay':'fi-py','Australia':'fi-au','Turkey':'fi-tr',
-    'Germany':'fi-de','Curacao':'fi-cw',"Côte d'Ivoire":'fi-ci','Ecuador':'fi-ec',
-    'Netherlands':'fi-nl','Japan':'fi-jp','Tunisia':'fi-tn','Ukraine':'fi-ua',
-    'Belgium':'fi-be','Egypt':'fi-eg','Iran':'fi-ir','New Zealand':'fi-nz',
-    'Spain':'fi-es','Cape Verde':'fi-cv','Saudi Arabia':'fi-sa','Uruguay':'fi-uy',
-    'France':'fi-fr','Senegal':'fi-sn','Norway':'fi-no','Iraq':'fi-iq',
-    'Argentina':'fi-ar','Algeria':'fi-dz','Austria':'fi-at','Jordan':'fi-jo',
-    'Portugal':'fi-pt','Uzbekistan':'fi-uz','Colombia':'fi-co','DR Congo':'fi-cd',
-    'England':'fi-gb-eng','Croatia':'fi-hr','Ghana':'fi-gh','Panama':'fi-pa',
-  };
+const nameMap={
+  'Brazil':'Brasil','Morocco':'Marrocos','Haiti':'Haiti','Scotland':'Escócia',
+  'USA':'EUA','Netherlands':'Holanda','South Africa':'África do Sul',
+  "Côte d'Ivoire":'Costa do Marfim','Korea Republic':'Coreia do Sul',
+  'DR Congo':'Congo','Saudi Arabia':'Arábia Saudita','Cape Verde':'Cabo Verde',
+};
 
-  let h=`<div class="legend-box">
-    <div class="legend-item"><div class="legend-dot" style="background:#009c3b"></div> Classificado</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#e6f1fb"></div> Possível vaga</div>
-  </div>`;
-
-  h+=`<div class="group-block">
+function buildGroupTable(group, grpData){
+  let h=`<div class="group-block" id="grp-${group}">
     <div class="group-label">Grupo ${group}</div>
     <div class="group-teams" style="overflow:auto">
       <table class="standings-table">
@@ -728,45 +726,34 @@ function renderStandingsGroup(standings, group){
           <th title="Empates">E</th><th title="Derrotas">D</th>
           <th title="Gols Pró">GP</th><th title="Gols Contra">GC</th>
           <th title="Saldo">SG</th><th title="Pontos" style="color:var(--azul)">Pts</th>
-        </tr></thead>
-        <tbody>`;
-
-  grpData.forEach((team, i)=>{
-    const isBrasil = team.name==='Brazil';
-    const isQual   = i<2;
-    const isPoss   = i===2;
-    let rowClass = isBrasil ? 'brasil-row' : (isQual ? 'qualificado' : isPoss ? 'possivel' : '');
-    const flag   = flagMap[team.name] || 'fi-xx';
-    const sg     = (team.goalsFor||0)-(team.goalsAgainst||0);
+        </tr></thead><tbody>`;
+  grpData.forEach((team,i)=>{
+    const isBrasil=team.name==='Brazil';
+    const isQual=i<2, isPoss=i===2;
+    const rowClass=isBrasil?'brasil-row':isQual?'qualificado':isPoss?'possivel':'';
+    const flag=flagMap[team.name]||'fi-xx';
+    const sg=(team.goalsFor||0)-(team.goalsAgainst||0);
+    const nome=nameMap[team.name]||team.shortName||team.name;
     h+=`<tr class="${rowClass}">
       <td class="td-team">
         <span class="pos-col">${i+1}</span>
         <span class="fi ${flag}" style="width:20px!important;height:15px!important;border-radius:2px;display:inline-block;vertical-align:middle;flex-shrink:0"></span>
-        ${team.name==='Brazil'?'Brasil':team.name==='Morocco'?'Marrocos':team.name==='Haiti'?'Haiti':team.name==='Scotland'?'Escócia':team.shortName||team.name}
+        ${nome}
       </td>
-      <td>${team.playedGames||0}</td>
-      <td>${team.won||0}</td>
-      <td>${team.draw||0}</td>
-      <td>${team.lost||0}</td>
-      <td>${team.goalsFor||0}</td>
-      <td>${team.goalsAgainst||0}</td>
+      <td>${team.playedGames||0}</td><td>${team.won||0}</td>
+      <td>${team.draw||0}</td><td>${team.lost||0}</td>
+      <td>${team.goalsFor||0}</td><td>${team.goalsAgainst||0}</td>
       <td style="color:${sg>0?'var(--verde-dark)':sg<0?'#dc2626':'var(--text-muted)'}">${sg>0?'+'+sg:sg}</td>
       <td class="pts-col">${team.points||0}</td>
     </tr>`;
   });
-
   h+=`</tbody></table></div></div>`;
-  area.innerHTML=h;
+  return h;
 }
 
-function renderStandingsStatic(group){
-  const area=document.getElementById('standings-area');
-  if(!area) return;
-  const grp=GROUPS.find(g=>g.g===group);
-  if(!grp){ area.innerHTML=''; return; }
-
-  let h=`<div class="group-block">
-    <div class="group-label">Grupo ${group}</div>
+function buildGroupStatic(grp){
+  let h=`<div class="group-block" id="grp-${grp.g}">
+    <div class="group-label">Grupo ${grp.g}</div>
     <div class="group-teams">`;
   for(const t of grp.teams){
     h+=`<div class="group-team-row${t.br?' brasil':''}">
@@ -775,10 +762,44 @@ function renderStandingsStatic(group){
       <span style="font-size:11px;color:var(--text-faint)">Aguardando jogos</span>
     </div>`;
   }
-  h+=`</div></div>
-  <p style="font-size:11px;color:var(--text-faint);text-align:center;margin-top:8px">Pontuação disponível após o início da Copa · 13/jun/2026</p>`;
+  h+=`</div></div>`;
+  return h;
+}
+
+function renderAllStandings(standings, filter){
+  const area=document.getElementById('standings-area');
+  if(!area) return;
+  const groupLetters=['A','B','C','D','E','F','G','H','I','J','K','L'];
+  const toShow=filter?[filter]:groupLetters;
+
+  let h=`<div class="legend-box">
+    <div class="legend-item"><div class="legend-dot" style="background:#009c3b"></div> Classificado</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e6f1fb"></div> Possível vaga</div>
+  </div>`;
+
+  for(const g of toShow){
+    const grpData=standings[g];
+    if(grpData && grpData.length>0){
+      h+=buildGroupTable(g, grpData);
+    } else {
+      const grp=GROUPS.find(x=>x.g===g);
+      if(grp) h+=buildGroupStatic(grp);
+    }
+  }
   area.innerHTML=h;
 }
+
+function renderAllStatic(filter){
+  const area=document.getElementById('standings-area');
+  if(!area) return;
+  const toShow=filter?GROUPS.filter(g=>g.g===filter):GROUPS;
+  let h='<p style="font-size:11px;color:var(--text-faint);text-align:center;margin-bottom:10px">Pontuação disponível após o início da Copa · 13/jun/2026</p>';
+  for(const grp of toShow) h+=buildGroupStatic(grp);
+  area.innerHTML=h;
+}
+
+function renderStandingsGroup(standings, group){ renderAllStandings(standings, group); }
+function renderStandingsStatic(group){ renderAllStatic(group); }
 
 function copyPix(){
   if(navigator.clipboard){ navigator.clipboard.writeText(PIX_CODE).then(()=>showToast('📋 Código Pix copiado!')); }
