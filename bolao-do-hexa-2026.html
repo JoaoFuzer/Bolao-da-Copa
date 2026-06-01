@@ -152,6 +152,39 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
   .rank-pts-detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
+
+  .locked-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #dc2626; font-weight: 500; }
+  .locked-banner .lock-icon { font-size: 22px; flex-shrink: 0; }
+  .locked-banner span { line-height: 1.4; }
+  .countdown-box { background: var(--azul); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .countdown-label { font-size: 12px; color: rgba(255,255,255,0.7); font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+  .countdown-value { font-size: 22px; font-weight: 800; color: var(--amarelo); font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px; }
+
+
+  .standings-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+  .standings-table thead tr { background: var(--bg); }
+  .standings-table th { padding: 5px 4px; color: var(--text-muted); font-weight: 600; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); text-align: center; }
+  .standings-table th.th-team { text-align: left; padding-left: 8px; }
+  .standings-table td { padding: 7px 4px; border-bottom: 0.5px solid var(--border); text-align: center; color: var(--text); }
+  .standings-table td.td-team { text-align: left; padding-left: 8px; display: flex; align-items: center; gap: 7px; font-weight: 500; }
+  .standings-table tr:last-child td { border-bottom: none; }
+  .standings-table tr.brasil-row td { background: var(--verde-light); color: var(--verde-dark); font-weight: 600; }
+  .standings-table tr.brasil-row td.td-team { border-left: 3px solid var(--verde); }
+  .pts-col { font-weight: 700; color: var(--azul); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; }
+  .pos-col { font-weight: 700; color: var(--text-muted); font-size: 12px; width: 18px; }
+  .qualificado { background: #e8f7ef !important; }
+  .qualificado .pts-col { color: var(--verde-dark) !important; }
+  .legend-box { display: flex; gap: 12px; margin-top: 8px; margin-bottom: 14px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .tabela-loading { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 13px; }
+  .group-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .group-btn { padding: 5px 10px; font-size: 11px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.5px; text-transform: uppercase; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .group-btn:hover { border-color: var(--verde); color: var(--verde); }
+  .group-btn.active { background: var(--azul); color: #fff; border-color: var(--azul); }
+  .group-btn.brasil-grp { border-color: var(--verde); color: var(--verde); }
+  .group-btn.brasil-grp.active { background: var(--verde); border-color: var(--verde); }
+
   @media (max-width: 420px) { .header-title { font-size: 30px; } .team-flag { font-size: 24px; } .tab { font-size: 11px; } }
 </style>
 </head>
@@ -230,8 +263,35 @@ function formatDate(d,t){
 }
 function getNextGame(){ const now=new Date(); for(const g of GAMES){ if(gameDateTime(g.date,g.time)>now) return g; } return GAMES[GAMES.length-1]; }
 function getPastGames(){ const now=new Date(); return GAMES.filter(g=>gameDateTime(g.date,g.time)<=now); }
+function isApostaBloqueada(g){
+  const now=new Date();
+  const kickoff=gameDateTime(g.date,g.time);
+  const cutoff=new Date(kickoff.getTime()-15*60*1000); // 15 min antes
+  return now>=cutoff;
+}
+function tempoRestante(g){
+  const now=new Date();
+  const cutoff=new Date(gameDateTime(g.date,g.time).getTime()-15*60*1000);
+  const diff=cutoff-now;
+  if(diff<=0) return null;
+  const dias=Math.floor(diff/86400000);
+  const hrs=Math.floor((diff%86400000)/3600000);
+  const min=Math.floor((diff%3600000)/60000);
+  const sec=Math.floor((diff%60000)/1000);
+  if(dias>0) return `${dias}d ${String(hrs).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${String(hrs).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+let countdownInterval=null;
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
 function clamp(el){ let v=parseInt(el.value); if(isNaN(v)||v<0)el.value=0; if(v>20)el.value=20; }
+function maskPhone(el){
+  let v=el.value.replace(/\D/g,'');
+  if(v.length>11) v=v.substring(0,11);
+  if(v.length>6) v=v.replace(/^(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3');
+  else if(v.length>2) v=v.replace(/^(\d{2})(\d{0,5})/,'($1) $2');
+  else if(v.length>0) v=v.replace(/^(\d{0,2})/,'($1');
+  el.value=v;
+}
 function initials(name){ return name.trim().split(' ').slice(0,2).map(w=>w[0].toUpperCase()).join(''); }
 
 function showTab(tab){
@@ -240,7 +300,7 @@ function showTab(tab){
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='palpites') renderPalpites();
   if(tab==='ranking') renderRanking();
-  if(tab==='tabela') renderTabela();
+  if(tab==='tabela') renderTabela();  
 }
 
 function jsonp(url){
@@ -258,6 +318,11 @@ async function apiGet(action){
   const r=await jsonp(APPS_SCRIPT_URL+'?action='+action);
   return r?r.data||[]:[];
 }
+async function apiGetStandings(){
+  if(!isConfigured()) return null;
+  const r=await jsonp(APPS_SCRIPT_URL+'?action=standings');
+  return r||null;
+}
 async function apiGetTotais(){
   if(!isConfigured()) return null;
   const r=await jsonp(APPS_SCRIPT_URL+'?action=totais');
@@ -268,6 +333,7 @@ async function apiPost(payload){
   const url=APPS_SCRIPT_URL+'?action=add'
     +'&name='+encodeURIComponent(payload.name)
     +'&gameId='+encodeURIComponent(payload.gameId)
+    +'&whats='+encodeURIComponent(payload.whats||'')
     +'&homeTeam='+encodeURIComponent(payload.homeTeam||'')
     +'&awayTeam='+encodeURIComponent(payload.awayTeam||'')
     +'&home='+encodeURIComponent(payload.home||0)
@@ -319,8 +385,34 @@ async function renderPalpitar(){
     </div>
     <div class="stadium-line">📍 ${next.st}</div>
   </div>`;
-  h+=`<div class="field"><label for="player-name">Seu nome</label><input type="text" id="player-name" placeholder="Ex: João Silva" maxlength="40"/></div>`;
-  h+=`<button class="btn-register" id="submit-btn" onclick="submitPalpite('${next.id}')">✅ Registrar palpite — R$ 5,00 via Pix</button>`;
+  const bloqueado = isApostaBloqueada(next);
+  if(!bloqueado){
+    const tempo = tempoRestante(next);
+    if(tempo && gameDateTime(next.date,next.time)-new Date() < 3600000){ // menos de 1h: mostra countdown
+      h+=`<div class="countdown-box">
+        <div>
+          <div class="countdown-label">⏱ Apostas encerram em</div>
+          <div class="countdown-value" id="countdown-val">${tempo}</div>
+        </div>
+        <div style="font-size:28px">⚽</div>
+      </div>`;
+    }
+    h+=`<div class="field"><label for="player-name">Seu nome</label><input type="text" id="player-name" placeholder="Ex: João Silva" maxlength="40"/></div>`;
+    h+=`<div class="field">
+      <label for="player-whats">WhatsApp para contato</label>
+      <div style="position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none">📱</span>
+        <input type="tel" id="player-whats" placeholder="(67) 99999-9999" maxlength="20" style="padding-left:40px" oninput="maskPhone(this)"/>
+      </div>
+      <span style="font-size:11px;color:var(--text-faint);margin-top:4px;display:block">Usado apenas para avisar caso você ganhe 🏆</span>
+    </div>`;
+    h+=`<button class="btn-register" id="submit-btn" onclick="submitPalpite('${next.id}')">✅ Registrar palpite — R$ 5,00 via Pix</button>`;
+  } else {
+    h+=`<div class="locked-banner">
+      <span class="lock-icon">🔒</span>
+      <span>As apostas para este jogo estão <strong>encerradas</strong>.<br>Os palpites foram bloqueados 15 minutos antes do início.</span>
+    </div>`;
+  }
 
   if(past.length>0){
     h+=`<p class="sec-title" style="margin-top:22px"><span class="sec-dot"></span> Jogos anteriores</p>`;
@@ -355,14 +447,17 @@ async function submitPalpite(gameId){
   const g=GAMES.find(x=>x.id===gameId);
   const home=g?g.home:''; const away=g?g.away:'';
   const name=document.getElementById('player-name').value.trim();
+  const whats=document.getElementById('player-whats')?document.getElementById('player-whats').value.trim():'';
+  if(!whats){ showToast('⚠️ Informe seu WhatsApp para contato!'); return; }
   const scoreHome=parseInt(document.getElementById('sc-home').value)||0;
   const scoreAway=parseInt(document.getElementById('sc-away').value)||0;
   if(!name){ showToast('⚠️ Digite seu nome primeiro!'); return; }
+  if(isApostaBloqueada(GAMES.find(x=>x.id===gameId))){ showToast('🔒 Apostas encerradas para este jogo!'); return; }
   if(!isConfigured()){ showToast('⚙️ Configure a URL do Apps Script primeiro!'); return; }
   const btn=document.getElementById('submit-btn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Salvando...';
   try{
-    await apiPost({action:'add',name,gameId,home:scoreHome,away:scoreAway,homeTeam:home,awayTeam:away,hf:g?g.id:'',af:g?g.id:'',ts:Date.now()});
+    await apiPost({action:'add',name,whats,gameId,home:scoreHome,away:scoreAway,homeTeam:home,awayTeam:away,hf:g?g.id:'',af:g?g.id:'',ts:Date.now()});
     showToast('🎉 Palpite registrado! Aguardando confirmação do Pix.');
     btn.textContent='✓ Palpite registrado!';
     setTimeout(()=>{ btn.disabled=false; btn.textContent='✅ Registrar palpite — R$ 5,00 via Pix'; },2500);
@@ -470,9 +565,10 @@ async function renderRanking(){
       h+=`<div class="winner-box">
         <h5>⚽ Resultado: ${t.resultado.homeGoals} × ${t.resultado.awayGoals}</h5>`;
       if(t.ganhadores.length>0){
-        t.ganhadores.forEach(name=>{
+        t.ganhadores.forEach(w=>{
+          const nome = typeof w==='object'?w.name:w;
           h+=`<div class="winner-item">
-            <span class="winner-name">🥇 ${name}</span>
+            <span class="winner-name">🥇 ${nome}</span>
             <span class="winner-prize">R$ ${t.premio.toFixed(2).replace('.',',')}</span>
           </div>`;
         });
@@ -533,8 +629,12 @@ async function renderRanking(){
   el.innerHTML=h;
 }
 
-function renderTabela(){
+let _standingsCache=null;
+let _activeGroup='C';
+
+async function renderTabela(){
   const el=document.getElementById('tabela-content');
+
   let h=`<div class="caminho-box">
     <h4><span class="fi fi-br"></span> Caminho do Brasil — Grupo C</h4>
     <div class="caminho-jogo">
@@ -544,16 +644,140 @@ function renderTabela(){
       <strong>29/jun</strong> · Oitavas de final vs adversário do Grupo F
     </div>
   </div>`;
-  h+=`<p class="sec-title"><span class="sec-dot"></span> Todos os grupos</p>`;
-  h+=`<p style="font-size:12px;color:#6b7280;margin-bottom:14px">48 seleções · EUA, México e Canadá · 11 jun – 19 jul 2026</p>`;
-  for(const grp of GROUPS){
-    h+=`<div class="group-block"><div class="group-label">Grupo ${grp.g}</div><div class="group-teams">`;
-    for(const t of grp.teams){
-      h+=`<div class="group-team-row${t.br?' brasil':''}"><span class="group-team-flag">${t.f}</span><span>${t.n}</span></div>`;
-    }
-    h+=`</div></div>`;
+
+  // Navegação de grupos
+  const groupLetters=['A','B','C','D','E','F','G','H','I','J','K','L'];
+  h+=`<p class="sec-title"><span class="sec-dot"></span> Classificação por grupo</p>`;
+  h+=`<div class="group-nav">`;
+  for(const g of groupLetters){
+    const isBr=g==='C';
+    h+=`<button class="group-btn${isBr?' brasil-grp':''}${g===_activeGroup?' active':''}" onclick="selectGroup('${g}')">Grupo ${g}</button>`;
   }
+  h+=`</div>`;
+  h+=`<div id="standings-area"><div class="tabela-loading"><span class="spinner"></span> Carregando classificação...</div></div>`;
+
   el.innerHTML=h;
+  loadStandings(_activeGroup);
+}
+
+function selectGroup(g){
+  _activeGroup=g;
+  document.querySelectorAll('.group-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent.trim()==='Grupo '+g);
+  });
+  loadStandings(g);
+}
+
+async function loadStandings(group){
+  const area=document.getElementById('standings-area');
+  if(!area) return;
+
+  // Usa cache se disponível e recente (5 min)
+  const now=Date.now();
+  if(_standingsCache && _standingsCache.ts && (now-_standingsCache.ts)<300000){
+    renderStandingsGroup(_standingsCache.data, group);
+    return;
+  }
+
+  area.innerHTML=`<div class="tabela-loading"><span class="spinner"></span> Carregando...</div>`;
+
+  const resp = await apiGetStandings();
+  if(resp && resp.standings){
+    _standingsCache = { data: resp.standings, ts: now };
+    renderStandingsGroup(resp.standings, group);
+  } else {
+    // Fallback: mostra tabela estática sem pontos
+    renderStandingsStatic(group);
+  }
+}
+
+function renderStandingsGroup(standings, group){
+  const area=document.getElementById('standings-area');
+  if(!area) return;
+  const grpData=standings[group];
+  if(!grpData || !grpData.length){ renderStandingsStatic(group); return; }
+
+  // Mapeia código de time para bandeira
+  const flagMap={
+    'Brazil':'fi-br','Morocco':'fi-ma','Haiti':'fi-ht','Scotland':'fi-gb-sct',
+    'Mexico':'fi-mx','South Africa':'fi-za','Korea Republic':'fi-kr','Denmark':'fi-dk',
+    'Canada':'fi-ca','Qatar':'fi-qa','Switzerland':'fi-ch','Italy':'fi-it',
+    'USA':'fi-us','Paraguay':'fi-py','Australia':'fi-au','Turkey':'fi-tr',
+    'Germany':'fi-de','Curacao':'fi-cw',"Côte d'Ivoire":'fi-ci','Ecuador':'fi-ec',
+    'Netherlands':'fi-nl','Japan':'fi-jp','Tunisia':'fi-tn','Ukraine':'fi-ua',
+    'Belgium':'fi-be','Egypt':'fi-eg','Iran':'fi-ir','New Zealand':'fi-nz',
+    'Spain':'fi-es','Cape Verde':'fi-cv','Saudi Arabia':'fi-sa','Uruguay':'fi-uy',
+    'France':'fi-fr','Senegal':'fi-sn','Norway':'fi-no','Iraq':'fi-iq',
+    'Argentina':'fi-ar','Algeria':'fi-dz','Austria':'fi-at','Jordan':'fi-jo',
+    'Portugal':'fi-pt','Uzbekistan':'fi-uz','Colombia':'fi-co','DR Congo':'fi-cd',
+    'England':'fi-gb-eng','Croatia':'fi-hr','Ghana':'fi-gh','Panama':'fi-pa',
+  };
+
+  let h=`<div class="legend-box">
+    <div class="legend-item"><div class="legend-dot" style="background:#009c3b"></div> Classificado</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e6f1fb"></div> Possível vaga</div>
+  </div>`;
+
+  h+=`<div class="group-block">
+    <div class="group-label">Grupo ${group}</div>
+    <div class="group-teams" style="overflow:auto">
+      <table class="standings-table">
+        <thead><tr>
+          <th class="th-team" style="width:36%">Seleção</th>
+          <th title="Jogos">J</th><th title="Vitórias">V</th>
+          <th title="Empates">E</th><th title="Derrotas">D</th>
+          <th title="Gols Pró">GP</th><th title="Gols Contra">GC</th>
+          <th title="Saldo">SG</th><th title="Pontos" style="color:var(--azul)">Pts</th>
+        </tr></thead>
+        <tbody>`;
+
+  grpData.forEach((team, i)=>{
+    const isBrasil = team.name==='Brazil';
+    const isQual   = i<2;
+    const isPoss   = i===2;
+    let rowClass = isBrasil ? 'brasil-row' : (isQual ? 'qualificado' : isPoss ? 'possivel' : '');
+    const flag   = flagMap[team.name] || 'fi-xx';
+    const sg     = (team.goalsFor||0)-(team.goalsAgainst||0);
+    h+=`<tr class="${rowClass}">
+      <td class="td-team">
+        <span class="pos-col">${i+1}</span>
+        <span class="fi ${flag}" style="width:20px!important;height:15px!important;border-radius:2px;display:inline-block;vertical-align:middle;flex-shrink:0"></span>
+        ${team.name==='Brazil'?'Brasil':team.name==='Morocco'?'Marrocos':team.name==='Haiti'?'Haiti':team.name==='Scotland'?'Escócia':team.shortName||team.name}
+      </td>
+      <td>${team.playedGames||0}</td>
+      <td>${team.won||0}</td>
+      <td>${team.draw||0}</td>
+      <td>${team.lost||0}</td>
+      <td>${team.goalsFor||0}</td>
+      <td>${team.goalsAgainst||0}</td>
+      <td style="color:${sg>0?'var(--verde-dark)':sg<0?'#dc2626':'var(--text-muted)'}">${sg>0?'+'+sg:sg}</td>
+      <td class="pts-col">${team.points||0}</td>
+    </tr>`;
+  });
+
+  h+=`</tbody></table></div></div>`;
+  area.innerHTML=h;
+}
+
+function renderStandingsStatic(group){
+  const area=document.getElementById('standings-area');
+  if(!area) return;
+  const grp=GROUPS.find(g=>g.g===group);
+  if(!grp){ area.innerHTML=''; return; }
+
+  let h=`<div class="group-block">
+    <div class="group-label">Grupo ${group}</div>
+    <div class="group-teams">`;
+  for(const t of grp.teams){
+    h+=`<div class="group-team-row${t.br?' brasil':''}">
+      <span class="group-team-flag">${t.f}</span>
+      <span style="flex:1">${t.n}</span>
+      <span style="font-size:11px;color:var(--text-faint)">Aguardando jogos</span>
+    </div>`;
+  }
+  h+=`</div></div>
+  <p style="font-size:11px;color:var(--text-faint);text-align:center;margin-top:8px">Pontuação disponível após o início da Copa · 13/jun/2026</p>`;
+  area.innerHTML=h;
 }
 
 function copyPix(){
@@ -561,7 +785,22 @@ function copyPix(){
   else{ const ta=document.createElement('textarea'); ta.value=PIX_CODE; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('📋 Código Pix copiado!'); }
 }
 
-renderPalpitar();
+renderPalpitar().then(()=>{
+  if(countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(()=>{
+    const next = getNextGame();
+    if(!next) return;
+    const el = document.getElementById('countdown-val');
+    if(!el) return;
+    if(isApostaBloqueada(next)){
+      clearInterval(countdownInterval);
+      renderPalpitar();
+      return;
+    }
+    const t = tempoRestante(next);
+    if(t) el.textContent = t;
+  }, 1000);
+});
 </script>
 </body>
 </html>
