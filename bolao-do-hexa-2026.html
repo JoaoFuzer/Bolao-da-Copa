@@ -172,7 +172,7 @@
 // ============================================================
 //  CONFIGURAÇÃO — cole aqui a URL do seu Apps Script
 // ============================================================
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhayCUv_Nxf317QBKGL4zNsZjfRpsM_hlxftvl0JTbXRULzuOynZOO6E4zoTX6_GfN/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXZqZpJy0J2_UGHXzmY16skJ9N8jCjhyFaUY7GaPwN79bKhBPDN3ZJh_QorAOWM7j_/exec';
 // ============================================================
 
 const PIX_CODE = '00020101021126580014br.gov.bcb.pix01360ebfdc0c-dcfd-4313-9321-a4d99e294cc95204000053039865802BR5923ANDERSON GOMES DA SILVA6012CAMPO GRANDE62070503***63043F36';
@@ -224,12 +224,32 @@ function showTab(tab){
 
 async function apiGet(action){
   if(!isConfigured()) return [];
-  try{ const r=await fetch(APPS_SCRIPT_URL+'?action='+action); return (await r.json()).data||[]; }catch(e){ return []; }
+  return new Promise((resolve)=>{
+    const cb='cb_'+Date.now();
+    window[cb]=(data)=>{ resolve(data.data||[]); delete window[cb]; s.remove(); };
+    const s=document.createElement('script');
+    s.src=APPS_SCRIPT_URL+'?action='+action+'&callback='+cb;
+    s.onerror=()=>{ resolve([]); delete window[cb]; };
+    document.head.appendChild(s);
+  });
 }
 async function apiPost(payload){
   if(!isConfigured()) throw new Error('não configurado');
-  const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
-  return await r.json();
+  const url=APPS_SCRIPT_URL+'?action=add&name='+encodeURIComponent(payload.name)
+    +'&gameId='+encodeURIComponent(payload.gameId)
+    +'&homeTeam='+encodeURIComponent(payload.homeTeam||'')
+    +'&awayTeam='+encodeURIComponent(payload.awayTeam||'')
+    +'&home='+encodeURIComponent(payload.home||0)
+    +'&away='+encodeURIComponent(payload.away||0)
+    +'&ts='+encodeURIComponent(payload.ts||Date.now());
+  return new Promise((resolve,reject)=>{
+    const cb='cb_'+Date.now();
+    window[cb]=(data)=>{ resolve(data); delete window[cb]; s.remove(); };
+    const s=document.createElement('script');
+    s.src=url+'&callback='+cb;
+    s.onerror=()=>{ reject(new Error('erro')); delete window[cb]; };
+    document.head.appendChild(s);
+  });
 }
 
 function qrSVG(){
