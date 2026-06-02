@@ -601,7 +601,7 @@ async function renderPalpites(){
           </div>
           ${pago
             ? `<span class="badge badge-pago">✅ Pago</span>`
-            : `<span class="badge badge-pendente">💰 Pagamento pendente</span>`
+            : `<span class="badge badge-pendente">⏳ Aguardando confirmação do adm</span>`
           }
         </div>
         <div class="palpite-score">${g.hf} ${p.home} <span style="color:#9ca3af;font-weight:400">×</span> ${p.away} ${g.af}</div>
@@ -610,7 +610,7 @@ async function renderPalpites(){
   }
   if(totalPendente>0){
     h=`<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:14px">
-      💰 <strong>${totalPendente} palpite${totalPendente>1?'s':''} com pagamento pendente.</strong> Para confirmar, abra a planilha e escreva <strong>SIM</strong> na coluna Pago.
+      ⏳ <strong>${totalPendente} palpite${totalPendente>1?'s':''} aguardando confirmação do administrador.</strong> Para confirmar, abra a planilha e escreva <strong>SIM</strong> na coluna Pago.
     </div>`+h;
   }
   el.innerHTML=h||`<div class="empty">Nenhum palpite encontrado.</div>`;
