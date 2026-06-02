@@ -19,14 +19,23 @@
   }
   body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
 
-  .header { background: var(--verde); overflow: hidden; position: relative; }
-  .header-bg-pattern { position: absolute; inset: 0; background-image: repeating-linear-gradient(60deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 30px); }
-  .header-top { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 28px 20px 22px; text-align: center; }
-  .trophy-ring { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 12px; border: 2px solid rgba(255,255,255,0.25); }
-  .event-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
-  .header-title { font-family: 'Barlow Condensed', sans-serif; font-size: 38px; font-weight: 800; color: #fff; line-height: 1; margin-bottom: 4px; }
-  .header-sub { font-size: 13px; color: rgba(255,255,255,0.75); }
-  .header-stripe { height: 8px; background: linear-gradient(90deg, var(--verde) 0%, var(--amarelo) 40%, var(--amarelo) 60%, var(--verde) 100%); position: relative; z-index: 1; }
+  .header { overflow: hidden; position: relative; background: #000; }
+  .header-bg-pattern {
+    position: absolute; inset: 0; z-index: 0;
+    background-image: url('https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80');
+    background-size: cover; background-position: center;
+    filter: brightness(0.55) saturate(1.3);
+  }
+  .header-overlay {
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(180deg, rgba(0,80,20,0.45) 0%, rgba(0,0,0,0.55) 100%);
+  }
+  .header-top { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 28px 20px 22px; text-align: center; }
+  .trophy-ring { width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 34px; margin-bottom: 12px; border: 2px solid rgba(255,220,0,0.5); box-shadow: 0 0 20px rgba(255,220,0,0.2); }
+  .event-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-bottom: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+  .header-title { font-family: 'Barlow Condensed', sans-serif; font-size: 40px; font-weight: 800; color: #fff; line-height: 1; margin-bottom: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+  .header-sub { font-size: 13px; color: rgba(255,255,255,0.85); text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+  .header-stripe { height: 6px; background: linear-gradient(90deg, var(--verde) 0%, var(--amarelo) 40%, var(--amarelo) 60%, var(--verde) 100%); position: relative; z-index: 2; }
 
   .config-banner { background: #fffbeb; border-bottom: 1px solid #fde68a; padding: 10px 16px; font-size: 12px; color: #92400e; text-align: center; display: none; }
   .config-banner.show { display: block; }
@@ -185,6 +194,25 @@
   .group-btn.brasil-grp { border-color: var(--verde); color: var(--verde); }
   .group-btn.brasil-grp.active { background: var(--verde); border-color: var(--verde); color: #fff; }
 
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s; }
+  .modal-overlay.hidden { display: none; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal-box { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 24px 20px 32px; width: 100%; max-width: 520px; animation: slideUp 0.25s cubic-bezier(.175,.885,.32,1.1); }
+  @keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .modal-game { background: var(--bg); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 14px; }
+  .modal-teams { display: flex; align-items: center; justify-content: space-around; gap: 8px; }
+  .modal-team { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .modal-team-flag .fi, .modal-team-flag span.fi { width: 36px !important; height: 27px !important; border-radius: 3px; display: block !important; }
+  .modal-team-name { font-size: 13px; font-weight: 600; }
+  .modal-score { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; font-weight: 800; color: var(--azul); }
+  .modal-score-sep { font-size: 20px; color: var(--text-muted); font-weight: 400; }
+  .modal-info { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-align: center; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+  .modal-btn-cancel { flex: 1; padding: 13px; font-size: 15px; font-weight: 600; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
+  .modal-btn-confirm { flex: 2; padding: 13px; font-size: 15px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; background: var(--verde); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; }
+
   @media (max-width: 420px) { .header-title { font-size: 30px; } .team-flag { font-size: 24px; } .tab { font-size: 11px; } }
 </style>
 </head>
@@ -192,6 +220,7 @@
 
 <header class="header">
   <div class="header-bg-pattern"></div>
+  <div class="header-overlay"></div>
   <div class="header-top">
     <div class="trophy-ring">🏆</div>
     <div class="event-label">Copa do Mundo 2026</div>
@@ -221,6 +250,34 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay hidden" id="confirm-modal" onclick="closeModalOutside(event)">
+  <div class="modal-box">
+    <div class="modal-title">✅ Confirmar palpite?</div>
+    <div class="modal-game">
+      <div class="modal-teams">
+        <div class="modal-team">
+          <div class="modal-team-flag" id="modal-hf"></div>
+          <div class="modal-team-name" id="modal-ht"></div>
+        </div>
+        <div style="text-align:center">
+          <div class="modal-score"><span id="modal-sh">0</span><span class="modal-score-sep"> × </span><span id="modal-sa">0</span></div>
+          <div style="font-size:11px;color:var(--text-faint)">seu palpite</div>
+        </div>
+        <div class="modal-team">
+          <div class="modal-team-flag" id="modal-af"></div>
+          <div class="modal-team-name" id="modal-at"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-info" id="modal-name"></div>
+    <div class="modal-info" id="modal-whats"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeModal()">✗ Cancelar</button>
+      <button class="modal-btn-confirm" id="modal-confirm-btn" onclick="confirmPalpite()">✔ Confirmar palpite</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ============================================================
@@ -458,13 +515,15 @@ async function submitPalpite(gameId){
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Salvando...';
   try{
     await apiPost({action:'add',name,whats,gameId,home:scoreHome,away:scoreAway,homeTeam:home,awayTeam:away,hf:g?g.id:'',af:g?g.id:'',ts:Date.now()});
-    showToast('🎉 Palpite registrado! Aguardando confirmação do Pix.');
-    btn.textContent='✓ Palpite registrado!';
-    setTimeout(()=>{ btn.disabled=false; btn.textContent='✅ Registrar palpite — R$ 5,00 via Pix'; },2500);
+    closeModal();
+    showToast('🎉 Palpite de '+name+' registrado!');
+    const submitBtn=document.getElementById('submit-btn');
+    if(submitBtn){ submitBtn.textContent='✓ Palpite registrado!'; setTimeout(()=>{ submitBtn.disabled=false; submitBtn.textContent='✅ Registrar palpite — R$ 5,00 via Pix'; },2500); }
   }catch(e){
-    btn.disabled=false; btn.textContent='✅ Registrar palpite — R$ 5,00 via Pix';
+    btn.disabled=false; btn.innerHTML='✔ Confirmar palpite';
     showToast('❌ Erro ao salvar. Verifique a conexão.');
   }
+  _pendingPalpite=null;
 }
 
 async function renderPalpites(){
@@ -479,10 +538,58 @@ async function renderPalpites(){
 
   let totalPendente=0;
   let h='';
+
   for(const g of GAMES){
     const ps=byGame[g.id]||[];
     if(!ps.length) continue;
+
+    // Estatísticas dos placares apostados
+    const pagos=ps.filter(p=>String(p.pago).toUpperCase()==='SIM');
+    const scoreCount={};
+    for(const p of pagos){
+      const k=`${p.home}x${p.away}`;
+      scoreCount[k]=(scoreCount[k]||0)+1;
+    }
+    const topScores=Object.entries(scoreCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+    // Vitória brasil / empate / derrota brasil
+    let vBr=0,emp=0,dBr=0;
+    for(const p of pagos){
+      const h1=parseInt(p.home),a1=parseInt(p.away);
+      const brHome=g.home==='Brasil';
+      const brGoals=brHome?h1:a1, advGoals=brHome?a1:h1;
+      if(brGoals>advGoals) vBr++;
+      else if(brGoals===advGoals) emp++;
+      else dBr++;
+    }
+
     h+=`<p class="sec-title"><span class="sec-dot"></span>${g.hf} ${g.home} × ${g.away} ${g.af}</p>`;
+
+    if(pagos.length>0){
+      h+=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px">📊 Estatísticas (${pagos.length} palpite${pagos.length!==1?'s':''})</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="flex:1;text-align:center;background:var(--verde-light);border-radius:6px;padding:8px 4px">
+            <div style="font-size:18px;font-weight:800;font-family:'Barlow Condensed',sans-serif;color:var(--verde-dark)">${vBr}</div>
+            <div style="font-size:10px;color:var(--verde-dark);font-weight:600">🇧🇷 Vitória</div>
+          </div>
+          <div style="flex:1;text-align:center;background:#f3f4f6;border-radius:6px;padding:8px 4px">
+            <div style="font-size:18px;font-weight:800;font-family:'Barlow Condensed',sans-serif;color:var(--text-muted)">${emp}</div>
+            <div style="font-size:10px;color:var(--text-muted);font-weight:600">🤝 Empate</div>
+          </div>
+          <div style="flex:1;text-align:center;background:#fef2f2;border-radius:6px;padding:8px 4px">
+            <div style="font-size:18px;font-weight:800;font-family:'Barlow Condensed',sans-serif;color:#dc2626">${dBr}</div>
+            <div style="font-size:10px;color:#dc2626;font-weight:600">❌ Derrota</div>
+          </div>
+        </div>
+        ${topScores.length>0?`<div style="font-size:11px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:5px">Placares mais apostados</div>
+        ${topScores.map(([k,cnt])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:0.5px solid var(--border)">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700">${k.replace('x',' × ')}</span>
+          <span style="font-size:12px;color:var(--text-muted)">${cnt} aposta${cnt!==1?'s':''}</span>
+        </div>`).join('')}`:''}
+      </div>`;
+    }
+
     for(const p of ps){
       const pago = String(p.pago).toUpperCase()==='SIM';
       if(!pago) totalPendente++;
@@ -497,7 +604,7 @@ async function renderPalpites(){
             : `<span class="badge badge-pendente">💰 Pagamento pendente</span>`
           }
         </div>
-        <div class="palpite-score">${p.hf||g.hf} ${p.home} <span style="color:#9ca3af;font-weight:400">×</span> ${p.away} ${p.af||g.af}</div>
+        <div class="palpite-score">${g.hf} ${p.home} <span style="color:#9ca3af;font-weight:400">×</span> ${p.away} ${g.af}</div>
       </div>`;
     }
   }
