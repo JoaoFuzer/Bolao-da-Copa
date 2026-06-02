@@ -195,11 +195,11 @@
   .group-btn.brasil-grp.active { background: var(--verde); border-color: var(--verde); color: #fff; }
 
 
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s; }
   .modal-overlay.hidden { display: none; }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  .modal-box { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 24px 20px 32px; width: 100%; max-width: 520px; animation: slideUp 0.25s cubic-bezier(.175,.885,.32,1.1); }
-  @keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal-box { background: var(--surface); border-radius: var(--radius); padding: 28px 24px 24px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); animation: popIn 0.25s cubic-bezier(.175,.885,.32,1.275); }
+  @keyframes popIn { from{transform:scale(0.85);opacity:0} to{transform:scale(1);opacity:1} }
   .modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
   .modal-game { background: var(--bg); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 14px; }
   .modal-teams { display: flex; align-items: center; justify-content: space-around; gap: 8px; }
@@ -253,7 +253,10 @@
 
 <div class="modal-overlay hidden" id="confirm-modal" onclick="closeModalOutside(event)">
   <div class="modal-box">
-    <div class="modal-title">✅ Confirmar palpite?</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:52px;height:52px;background:var(--verde-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:26px">⚽</div>
+      <div class="modal-title">Confirmar palpite?</div>
+    </div>
     <div class="modal-game">
       <div class="modal-teams">
         <div class="modal-team">
@@ -262,7 +265,7 @@
         </div>
         <div style="text-align:center">
           <div class="modal-score"><span id="modal-sh">0</span><span class="modal-score-sep"> × </span><span id="modal-sa">0</span></div>
-          <div style="font-size:11px;color:var(--text-faint)">seu palpite</div>
+          <div style="font-size:11px;color:var(--text-faint);margin-top:2px">seu palpite</div>
         </div>
         <div class="modal-team">
           <div class="modal-team-flag" id="modal-af"></div>
@@ -270,11 +273,13 @@
         </div>
       </div>
     </div>
-    <div class="modal-info" id="modal-name"></div>
-    <div class="modal-info" id="modal-whats"></div>
+    <div style="background:var(--bg);border-radius:var(--radius-sm);padding:10px 14px;margin-top:10px;font-size:13px;display:flex;flex-direction:column;gap:4px">
+      <div id="modal-name" style="color:var(--text)"></div>
+      <div id="modal-whats" style="color:var(--text-muted);font-size:12px"></div>
+    </div>
     <div class="modal-btns">
       <button class="modal-btn-cancel" onclick="closeModal()">✗ Cancelar</button>
-      <button class="modal-btn-confirm" id="modal-confirm-btn" onclick="confirmPalpite()">✔ Confirmar palpite</button>
+      <button class="modal-btn-confirm" id="modal-confirm-btn" onclick="confirmPalpite()">✔ Confirmar</button>
     </div>
   </div>
 </div>
@@ -500,21 +505,24 @@ async function renderPalpitar(){
   if(isConfigured()) document.getElementById('config-banner').classList.remove('show');
 }
 
-async function submitPalpite(gameId){
-  const g=GAMES.find(x=>x.id===gameId);
-  const home=g?g.home:''; const away=g?g.away:'';
-  const name=document.getElementById('player-name').value.trim();
-  const whats=document.getElementById('player-whats')?document.getElementById('player-whats').value.trim():'';
-  if(!whats){ showToast('⚠️ Informe seu WhatsApp para contato!'); return; }
-  const scoreHome=parseInt(document.getElementById('sc-home').value)||0;
-  const scoreAway=parseInt(document.getElementById('sc-away').value)||0;
-  if(!name){ showToast('⚠️ Digite seu nome primeiro!'); return; }
-  if(isApostaBloqueada(GAMES.find(x=>x.id===gameId))){ showToast('🔒 Apostas encerradas para este jogo!'); return; }
-  if(!isConfigured()){ showToast('⚙️ Configure a URL do Apps Script primeiro!'); return; }
-  const btn=document.getElementById('submit-btn');
+let _pendingPalpite=null;
+
+function closeModal(){
+  document.getElementById('confirm-modal').classList.add('hidden');
+  _pendingPalpite=null;
+}
+
+function closeModalOutside(e){
+  if(e.target===document.getElementById('confirm-modal')) closeModal();
+}
+
+async function confirmPalpite(){
+  if(!_pendingPalpite) return;
+  const {name,whats,gameId,scoreHome,scoreAway,g}=_pendingPalpite;
+  const btn=document.getElementById('modal-confirm-btn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Salvando...';
   try{
-    await apiPost({action:'add',name,whats,gameId,home:scoreHome,away:scoreAway,homeTeam:home,awayTeam:away,hf:g?g.id:'',af:g?g.id:'',ts:Date.now()});
+    await apiPost({action:'add',name,whats,gameId,home:scoreHome,away:scoreAway,homeTeam:g.home,awayTeam:g.away,hf:g.id,af:g.id,ts:Date.now()});
     closeModal();
     showToast('🎉 Palpite de '+name+' registrado!');
     const submitBtn=document.getElementById('submit-btn');
@@ -524,6 +532,32 @@ async function submitPalpite(gameId){
     showToast('❌ Erro ao salvar. Verifique a conexão.');
   }
   _pendingPalpite=null;
+}
+
+function submitPalpite(gameId){
+  const g=GAMES.find(x=>x.id===gameId);
+  const name=document.getElementById('player-name').value.trim();
+  const whats=document.getElementById('player-whats')?document.getElementById('player-whats').value.trim():'';
+  const scoreHome=parseInt(document.getElementById('sc-home').value)||0;
+  const scoreAway=parseInt(document.getElementById('sc-away').value)||0;
+  if(!name){ showToast('⚠️ Digite seu nome primeiro!'); return; }
+  if(!whats){ showToast('⚠️ Informe seu WhatsApp para contato!'); return; }
+  if(isApostaBloqueada(g)){ showToast('🔒 Apostas encerradas para este jogo!'); return; }
+  if(!isConfigured()){ showToast('⚙️ Configure a URL do Apps Script primeiro!'); return; }
+
+  // Apenas abre o modal de confirmação — NÃO salva ainda
+  _pendingPalpite={name,whats,gameId,scoreHome,scoreAway,g};
+  document.getElementById('modal-hf').innerHTML=g.hf;
+  document.getElementById('modal-ht').textContent=g.home;
+  document.getElementById('modal-af').innerHTML=g.af;
+  document.getElementById('modal-at').textContent=g.away;
+  document.getElementById('modal-sh').textContent=scoreHome;
+  document.getElementById('modal-sa').textContent=scoreAway;
+  document.getElementById('modal-name').textContent='👤 '+name;
+  document.getElementById('modal-whats').textContent='📱 '+whats;
+  document.getElementById('modal-confirm-btn').disabled=false;
+  document.getElementById('modal-confirm-btn').innerHTML='✔ Confirmar palpite';
+  document.getElementById('confirm-modal').classList.remove('hidden');
 }
 
 async function renderPalpites(){
