@@ -730,26 +730,37 @@ async function renderRanking(){
     el.innerHTML=h; return;
   }
 
-  // Calcular pontos: 3 pts placar exato, 1 pt resultado correto
+  // Calcular pontos: apenas o MELHOR palpite de cada pessoa por jogo
+  // 3 pts = placar exato, 1 pt = resultado correto
+  // Se fez vários palpites no mesmo jogo, conta só o de maior pontuação
   const byName={};
   for(const p of pagos){
-    if(!byName[p.name]) byName[p.name]={name:p.name,palpites:0,pts:0,acertos:[]};
+    if(!byName[p.name]) byName[p.name]={name:p.name,jogos:{},pts:0,acertos:[],palpites:0};
     byName[p.name].palpites++;
     const t=totais[p.gameId];
+    let ptsPalpite=0, tipoAcerto='';
     if(t&&t.resultado&&t.resultado.homeGoals!=null){
       const rh=t.resultado.homeGoals, ra=t.resultado.awayGoals;
       const ph=parseInt(p.home), pa=parseInt(p.away);
-      if(ph===rh&&pa===ra){
-        byName[p.name].pts+=3;
-        byName[p.name].acertos.push('placar exato');
-      } else if((ph>pa&&rh>ra)||(ph<pa&&rh<ra)||(ph===pa&&rh===ra)){
-        byName[p.name].pts+=1;
-        byName[p.name].acertos.push('resultado');
-      }
+      if(ph===rh&&pa===ra){ ptsPalpite=3; tipoAcerto='placar exato'; }
+      else if((ph>pa&&rh>ra)||(ph<pa&&rh<ra)||(ph===pa&&rh===ra)){ ptsPalpite=1; tipoAcerto='resultado'; }
+    }
+    // Guarda só o melhor palpite por jogo
+    const jogoAtual=byName[p.name].jogos[p.gameId];
+    if(!jogoAtual || ptsPalpite > jogoAtual.pts){
+      byName[p.name].jogos[p.gameId]={pts:ptsPalpite, tipo:tipoAcerto};
+    }
+  }
+  // Somar pontos dos melhores palpites por jogo
+  for(const pessoa of Object.values(byName)){
+    pessoa.pts=0; pessoa.acertos=[];
+    for(const jogo of Object.values(pessoa.jogos)){
+      pessoa.pts+=jogo.pts;
+      if(jogo.tipo) pessoa.acertos.push(jogo.tipo);
     }
   }
 
-  const sorted=Object.values(byName).sort((a,b)=>b.pts-a.pts||b.palpites-a.palpites);
+  const sorted=Object.values(byName).sort((a,b)=>b.pts-a.pts||b.acertos.length-a.acertos.length);
   const medals=['🥇','🥈','🥉'];
 
   if(pendentes.length>0){
