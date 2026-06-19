@@ -606,11 +606,20 @@ async function renderPalpites(){
   let totalPendente=0;
   let h='';
 
-  for(const g of GAMES){
+  const nextGameId = getNextGame().id;
+
+  // Próximo jogo primeiro, jogos passados depois
+  const now = new Date();
+  const gamesOrdered = [
+    ...GAMES.filter(g => gameDateTime(g.date, g.time) > now),
+    ...GAMES.filter(g => gameDateTime(g.date, g.time) <= now).reverse()
+  ];
+
+  for(const g of gamesOrdered){
     const ps=byGame[g.id]||[];
     if(!ps.length) continue;
 
-    // Estatísticas dos placares apostados
+    // Estatísticas apenas do próximo jogo
     const pagos=ps.filter(p=>String(p.pago).toUpperCase()==='SIM');
     const scoreCount={};
     for(const p of pagos){
@@ -632,7 +641,7 @@ async function renderPalpites(){
 
     h+=`<p class="sec-title"><span class="sec-dot"></span>${g.hf} ${g.home} × ${g.away} ${g.af}</p>`;
 
-    if(pagos.length>0){
+    if(pagos.length>0 && g.id===nextGameId){
       h+=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px">
         <div style="font-size:11px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px">📊 Estatísticas (${pagos.length} palpite${pagos.length!==1?'s':''})</div>
         <div style="display:flex;gap:8px;margin-bottom:10px">
