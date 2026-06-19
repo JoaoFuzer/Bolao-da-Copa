@@ -69,10 +69,12 @@
   .team-name { font-size: 13px; font-weight: 600; text-align: center; color: var(--text); }
   .vs-center { text-align: center; flex: 0 0 80px; }
   .score-inputs { display: flex; align-items: center; gap: 4px; justify-content: center; }
-  .score-input { width: 42px; height: 42px; text-align: center; font-size: 20px; font-weight: 700; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; font-family: 'Barlow Condensed', sans-serif; transition: border-color 0.15s; }
-  .score-input:focus { border-color: var(--verde); }
   .score-sep { font-size: 18px; font-weight: 700; color: var(--text-muted); }
   .score-hint { font-size: 10px; color: var(--text-faint); margin-top: 3px; }
+  .score-stepper { display: flex; align-items: center; gap: 4px; }
+  .step-btn { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--verde); background: transparent; color: var(--verde); font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.15s; user-select: none; -webkit-user-select: none; }
+  .step-btn:active { background: var(--verde); color: #fff; transform: scale(0.92); }
+  .score-display { min-width: 28px; height: 36px; text-align: center; font-size: 22px; font-weight: 800; font-family: 'Barlow Condensed', sans-serif; color: var(--text); display: flex; align-items: center; justify-content: center; }
   .stadium-line { margin-top: 10px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
 
   .field { margin-top: 14px; }
@@ -277,6 +279,10 @@
       <div id="modal-name" style="color:var(--text)"></div>
       <div id="modal-whats" style="color:var(--text-muted);font-size:12px"></div>
     </div>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);padding:10px 14px;margin-top:10px;text-align:center">
+      <div style="font-size:11px;color:var(--verde-dark);font-weight:600;margin-bottom:6px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:0.5px">💰 Após confirmar, pague via Pix</div>
+      <button onclick="copyPixModal()" style="font-size:11px;font-weight:600;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;color:var(--verde);background:var(--verde-light);border:none;border-radius:6px;padding:6px 12px;cursor:pointer;letter-spacing:0.3px">📋 Copiar código Pix</button>
+    </div>
     <div class="modal-btns">
       <button class="modal-btn-cancel" onclick="closeModal()">✗ Cancelar</button>
       <button class="modal-btn-confirm" id="modal-confirm-btn" onclick="confirmPalpite()">✔ Confirmar</button>
@@ -346,6 +352,20 @@ function tempoRestante(g){
 let countdownInterval=null;
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
 function clamp(el){ let v=parseInt(el.value); if(isNaN(v)||v<0)el.value=0; if(v>20)el.value=20; }
+function stepScore(id, delta){
+  const el=document.getElementById(id);
+  if(!el) return;
+  let v=(parseInt(el.textContent)||0)+delta;
+  if(v<0) v=0;
+  if(v>20) v=20;
+  el.textContent=v;
+}
+function getScore(id){
+  const el=document.getElementById(id);
+  if(!el) return 0;
+  // Suporta tanto span (stepper) quanto input
+  return parseInt(el.textContent||el.value)||0;
+}
 function maskPhone(el){
   let v=el.value.replace(/\D/g,'');
   if(v.length>11) v=v.substring(0,11);
@@ -437,9 +457,17 @@ async function renderPalpitar(){
       <div class="team"><span class="team-flag">${next.hf}</span><span class="team-name">${next.home}</span></div>
       <div class="vs-center">
         <div class="score-inputs">
-          <input type="number" min="0" max="20" value="0" class="score-input" id="sc-home" oninput="clamp(this)"/>
+          <div class="score-stepper">
+            <button class="step-btn" onclick="stepScore('sc-home',-1)">−</button>
+            <span class="score-display" id="sc-home">0</span>
+            <button class="step-btn" onclick="stepScore('sc-home',1)">+</button>
+          </div>
           <span class="score-sep">×</span>
-          <input type="number" min="0" max="20" value="0" class="score-input" id="sc-away" oninput="clamp(this)"/>
+          <div class="score-stepper">
+            <button class="step-btn" onclick="stepScore('sc-away',-1)">−</button>
+            <span class="score-display" id="sc-away">0</span>
+            <button class="step-btn" onclick="stepScore('sc-away',1)">+</button>
+          </div>
         </div>
         <div class="score-hint">seu palpite</div>
       </div>
@@ -525,6 +553,11 @@ async function confirmPalpite(){
     await apiPost({action:'add',name,whats,gameId,home:scoreHome,away:scoreAway,homeTeam:g.home,awayTeam:g.away,hf:g.id,af:g.id,ts:Date.now()});
     closeModal();
     showToast('🎉 Palpite de '+name+' registrado!');
+    // Zerar placar e nome após confirmação
+    const scHome=document.getElementById('sc-home'); if(scHome) scHome.textContent='0';
+    const scAway=document.getElementById('sc-away'); if(scAway) scAway.textContent='0';
+    const pname=document.getElementById('player-name'); if(pname) pname.value='';
+    const pwhats=document.getElementById('player-whats'); if(pwhats) pwhats.value='';
     const submitBtn=document.getElementById('submit-btn');
     if(submitBtn){ submitBtn.textContent='✓ Palpite registrado!'; setTimeout(()=>{ submitBtn.disabled=false; submitBtn.textContent='✅ Registrar palpite — R$ 5,00 via Pix'; },2500); }
   }catch(e){
@@ -538,8 +571,8 @@ function submitPalpite(gameId){
   const g=GAMES.find(x=>x.id===gameId);
   const name=document.getElementById('player-name').value.trim();
   const whats=document.getElementById('player-whats')?document.getElementById('player-whats').value.trim():'';
-  const scoreHome=parseInt(document.getElementById('sc-home').value)||0;
-  const scoreAway=parseInt(document.getElementById('sc-away').value)||0;
+  const scoreHome=getScore('sc-home');
+  const scoreAway=getScore('sc-away');
   if(!name){ showToast('⚠️ Digite seu nome primeiro!'); return; }
   if(!whats){ showToast('⚠️ Informe seu WhatsApp para contato!'); return; }
   if(isApostaBloqueada(g)){ showToast('🔒 Apostas encerradas para este jogo!'); return; }
@@ -953,6 +986,10 @@ function renderAllStatic(filter){
 function renderStandingsGroup(standings, group){ renderAllStandings(standings, group); }
 function renderStandingsStatic(group){ renderAllStatic(group); }
 
+function copyPixModal(){
+  if(navigator.clipboard){ navigator.clipboard.writeText(PIX_CODE).then(()=>showToast('📋 Código Pix copiado!')); }
+  else{ const ta=document.createElement('textarea'); ta.value=PIX_CODE; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('📋 Código Pix copiado!'); }
+}
 function copyPix(){
   if(navigator.clipboard){ navigator.clipboard.writeText(PIX_CODE).then(()=>showToast('📋 Código Pix copiado!')); }
   else{ const ta=document.createElement('textarea'); ta.value=PIX_CODE; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('📋 Código Pix copiado!'); }
