@@ -295,6 +295,98 @@
 //  CONFIGURAÇÃO — cole aqui a URL do seu Apps Script
 // ============================================================
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzC8AXU9ed5lBCBfAG68bc7_eT_VJzCJpuaaJ3YXEdhaWeK4_gjFPf9yBJs9MVr0hsv/exec';
+const API_FOOTBALL_KEY = 'cdc0d7f365fb4e1adfd70a02b6118660';
+const API_FOOTBALL_URL = 'https://v3.football.api-sports.io';
+
+// Cache local para não repetir chamadas
+let _fixturesCache = null;
+let _standingsCacheApi = null;
+let _cacheTs = 0;
+
+async function apiFetch(endpoint) {
+  try {
+    const res = await fetch(API_FOOTBALL_URL + endpoint, {
+      headers: {
+        'x-apisports-key': API_FOOTBALL_KEY,
+        'x-rapidapi-host': 'v3.football.api-sports.io'
+      }
+    });
+    return await res.json();
+  } catch(e) {
+    console.error('API error:', e);
+    return null;
+  }
+}
+
+// Mapeamento dos jogos do Brasil
+const BRAZIL_GAMES_MAP = {
+  g1: { home: 'Brazil', away: 'Morocco' },
+  g2: { home: 'Brazil', away: 'Haiti' },
+  g3: { home: 'Scotland', away: 'Brazil' },
+  g4: { home: 'Brazil', away: null },
+};
+
+async function fetchBrazilResults() {
+  const now = Date.now();
+  if (_fixturesCache && (now - _cacheTs) < 120000) return _fixturesCache; // cache 2min
+
+  const json = await apiFetch('/fixtures?league=1&season=2026&team=6');
+  if (!json || !json.response) return {};
+
+  const results = {};
+  for (const gameId in BRAZIL_GAMES_MAP) {
+    const map = BRAZIL_GAMES_MAP[gameId];
+    if (!map.away) continue;
+    const match = json.response.find(f => {
+      const h = f.teams.home.name.toLowerCase();
+      const a = f.teams.away.name.toLowerCase();
+      return (h.includes(map.home.toLowerCase()) && a.includes(map.away.toLowerCase())) ||
+             (h.includes(map.away.toLowerCase()) && a.includes(map.home.toLowerCase()));
+    });
+    if (!match) continue;
+    const st = match.fixture.status.short;
+    const finished = ['FT','AET','PEN'].includes(st);
+    const live = ['1H','HT','2H','ET','P'].includes(st);
+    if (finished || live) {
+      const hg = match.score.fullTime.home;
+      const ag = match.score.fullTime.away;
+      if (hg !== null && ag !== null) {
+        const brazilIsHome = match.teams.home.name === 'Brazil';
+        results[gameId] = {
+          gameId,
+          homeGoals: brazilIsHome ? hg : ag,
+          awayGoals: brazilIsHome ? ag : hg,
+          status: finished ? 'FINISHED' : 'IN_PLAY'
+        };
+      }
+    }
+  }
+  _fixturesCache = results;
+  _cacheTs = now;
+  return results;
+}
+
+async function fetchStandingsApi() {
+  const now = Date.now();
+  if (_standingsCacheApi && (now - _cacheTs) < 300000) return _standingsCacheApi; // cache 5min
+
+  const json = await apiFetch('/standings?league=1&season=2026');
+  if (!json || !json.response || !json.response[0]) return null;
+
+  const result = {};
+  for (const grpArr of json.response[0].league.standings) {
+    if (!grpArr.length) continue;
+    const letter = (grpArr[0].group || '').replace(/group\s*/i,'').trim().toUpperCase();
+    if (!letter) continue;
+    result[letter] = grpArr.map(t => ({
+      pos: t.rank, name: t.team.name, shortName: t.team.name,
+      playedGames: t.all.played, won: t.all.win, draw: t.all.draw, lost: t.all.lose,
+      goalsFor: t.all.goals.for, goalsAgainst: t.all.goals.against, points: t.points,
+    }));
+  }
+  _standingsCacheApi = result;
+  return result;
+}
 // ============================================================
 
 const PIX_CODE = '00020101021126580014br.gov.bcb.pix01360ebfdc0c-dcfd-4313-9321-a4d99e294cc95204000053039865802BR5923ANDERSON GOMES DA SILVA6012CAMPO GRANDE62070503***63043F36';
@@ -697,7 +789,22 @@ async function renderRanking(){
   if(!isConfigured()){ el.innerHTML=`<div class="empty"><span class="empty-icon">⚙️</span>Configure o Apps Script<br>para ver o ranking.</div>`; return; }
   el.innerHTML=`<div class="loading-inline"><span class="spinner"></span> Carregando ranking...</div>`;
 
-  const [all, totaisResp] = await Promise.all([apiGet('list'), apiGetTotais()]);
+  // Buscar resultados direto da API e mesclar com totais do Apps Script
+  const [all, totaisResp, brazilResults] = await Promise.all([
+    apiGet('list'), apiGetTotais(), fetchBrazilResults()
+  ]);
+
+  // Mesclar resultados da API com os do Apps Script
+  if(totaisResp && totaisResp.totais){
+    for(const gameId in brazilResults){
+      if(!totaisResp.totais[gameId]) totaisResp.totais[gameId]={};
+      if(!totaisResp.totais[gameId].resultado || totaisResp.totais[gameId].resultado?.status !== 'FINISHED'){
+        totaisResp.totais[gameId].resultado = brazilResults[gameId];
+        if(brazilResults[gameId]?.status === 'FINISHED') totaisResp.totais[gameId].status = 'encerrado';
+        if(brazilResults[gameId]?.status === 'IN_PLAY') totaisResp.totais[gameId].status = 'ao_vivo';
+      }
+    }
+  }
   const totais   = totaisResp&&totaisResp.totais ? totaisResp.totais : {};
   const acumuladoTotal = totaisResp ? totaisResp.acumuladoTotal||0 : 0;
 
@@ -876,8 +983,17 @@ async function loadStandings(group){
     return;
   }
 
-  area.innerHTML=`<div class="tabela-loading"><span class="spinner"></span> Carregando...</div>`;
+  area.innerHTML=`<div class="tabela-loading"><span class="spinner"></span> Carregando classificação...</div>`;
 
+  // Tenta API direta primeiro
+  const apiData = await fetchStandingsApi();
+  if(apiData && Object.keys(apiData).length>0){
+    _standingsCache = { data: apiData, ts: now };
+    renderAllStandings(apiData, group);
+    return;
+  }
+
+  // Fallback: Apps Script
   const resp = await apiGetStandings();
   if(resp && resp.standings && Object.keys(resp.standings).length>0){
     _standingsCache = { data: resp.standings, ts: now };
