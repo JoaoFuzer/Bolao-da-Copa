@@ -903,25 +903,52 @@ async function loadStandings(group){
 }
 
 const flagMap={
-  'Brazil':'fi-br','Morocco':'fi-ma','Haiti':'fi-ht','Scotland':'fi-gb-sct',
-  'Mexico':'fi-mx','South Africa':'fi-za','Korea Republic':'fi-kr','Denmark':'fi-dk',
-  'Canada':'fi-ca','Qatar':'fi-qa','Switzerland':'fi-ch','Italy':'fi-it',
+  // Nomes em português (vindos da planilha)
+  'Brasil':'fi-br','Marrocos':'fi-ma','Haiti':'fi-ht','Escócia':'fi-gb-sct',
+  'México':'fi-mx','África do Sul':'fi-za','Coreia do Sul':'fi-kr','República Tcheca':'fi-cz',
+  'Canadá':'fi-ca','Catar':'fi-qa','Suíça':'fi-ch','Itália':'fi-it',
+  'Bósnia e Herzegovina':'fi-ba','Estados Unidos':'fi-us','Paraguai':'fi-py',
+  'Austrália':'fi-au','Turquia':'fi-tr','Alemanha':'fi-de','Curaçao':'fi-cw',
+  'Costa do Marfim':'fi-ci','Equador':'fi-ec','Holanda':'fi-nl','Japão':'fi-jp',
+  'Tunísia':'fi-tn','Ucrânia':'fi-ua','Suécia':'fi-se','Bélgica':'fi-be',
+  'Egito':'fi-eg','Irã':'fi-ir','Nova Zelândia':'fi-nz','Espanha':'fi-es',
+  'Cabo Verde':'fi-cv','Arábia Saudita':'fi-sa','Uruguai':'fi-uy','França':'fi-fr',
+  'Senegal':'fi-sn','Noruega':'fi-no','Iraque':'fi-iq','Argentina':'fi-ar',
+  'Argélia':'fi-dz','Áustria':'fi-at','Jordânia':'fi-jo','Portugal':'fi-pt',
+  'Uzbequistão':'fi-uz','Colômbia':'fi-co','RD Congo':'fi-cd','Inglaterra':'fi-gb-eng',
+  'Croácia':'fi-hr','Gana':'fi-gh','Panamá':'fi-pa',
+  // Nomes em inglês (fallback)
+  'Brazil':'fi-br','Morocco':'fi-ma','Scotland':'fi-gb-sct','Mexico':'fi-mx',
+  'South Africa':'fi-za','Korea Republic':'fi-kr','Denmark':'fi-dk','Canada':'fi-ca',
+  'Qatar':'fi-qa','Switzerland':'fi-ch','Bosnia and Herzegovina':'fi-ba',
   'USA':'fi-us','Paraguay':'fi-py','Australia':'fi-au','Turkey':'fi-tr',
   'Germany':'fi-de','Curacao':'fi-cw',"Côte d'Ivoire":'fi-ci','Ecuador':'fi-ec',
   'Netherlands':'fi-nl','Japan':'fi-jp','Tunisia':'fi-tn','Ukraine':'fi-ua',
-  'Belgium':'fi-be','Egypt':'fi-eg','Iran':'fi-ir','New Zealand':'fi-nz',
-  'Spain':'fi-es','Cape Verde':'fi-cv','Saudi Arabia':'fi-sa','Uruguay':'fi-uy',
-  'France':'fi-fr','Senegal':'fi-sn','Norway':'fi-no','Iraq':'fi-iq',
-  'Argentina':'fi-ar','Algeria':'fi-dz','Austria':'fi-at','Jordan':'fi-jo',
-  'Portugal':'fi-pt','Uzbekistan':'fi-uz','Colombia':'fi-co','DR Congo':'fi-cd',
-  'England':'fi-gb-eng','Croatia':'fi-hr','Ghana':'fi-gh','Panama':'fi-pa',
+  'Sweden':'fi-se','Belgium':'fi-be','Egypt':'fi-eg','Iran':'fi-ir',
+  'New Zealand':'fi-nz','Spain':'fi-es','Cape Verde':'fi-cv','Saudi Arabia':'fi-sa',
+  'Uruguay':'fi-uy','France':'fi-fr','Senegal':'fi-sn','Norway':'fi-no',
+  'Iraq':'fi-iq','Argentina':'fi-ar','Algeria':'fi-dz','Austria':'fi-at',
+  'Jordan':'fi-jo','Portugal':'fi-pt','Uzbekistan':'fi-uz','Colombia':'fi-co',
+  'DR Congo':'fi-cd','England':'fi-gb-eng','Croatia':'fi-hr','Ghana':'fi-gh','Panama':'fi-pa',
 };
 
 const nameMap={
+  // Inglês → Português
   'Brazil':'Brasil','Morocco':'Marrocos','Haiti':'Haiti','Scotland':'Escócia',
-  'USA':'EUA','Netherlands':'Holanda','South Africa':'África do Sul',
-  "Côte d'Ivoire":'Costa do Marfim','Korea Republic':'Coreia do Sul',
-  'DR Congo':'Congo','Saudi Arabia':'Arábia Saudita','Cape Verde':'Cabo Verde',
+  'Mexico':'México','South Africa':'África do Sul','Korea Republic':'Coreia do Sul',
+  'Canada':'Canadá','Qatar':'Catar','Switzerland':'Suíça',
+  'Bosnia and Herzegovina':'Bósnia e Herzegovina','USA':'Estados Unidos',
+  'Paraguay':'Paraguai','Australia':'Austrália','Turkey':'Turquia',
+  'Germany':'Alemanha','Curacao':'Curaçao',"Côte d'Ivoire":'Costa do Marfim',
+  'Ecuador':'Equador','Netherlands':'Holanda','Japan':'Japão','Tunisia':'Tunísia',
+  'Ukraine':'Ucrânia','Sweden':'Suécia','Belgium':'Bélgica','Egypt':'Egito',
+  'Iran':'Irã','New Zealand':'Nova Zelândia','Spain':'Espanha',
+  'Cape Verde':'Cabo Verde','Saudi Arabia':'Arábia Saudita','Uruguay':'Uruguai',
+  'France':'França','Senegal':'Senegal','Norway':'Noruega','Iraq':'Iraque',
+  'Argentina':'Argentina','Algeria':'Argélia','Austria':'Áustria','Jordan':'Jordânia',
+  'Portugal':'Portugal','Uzbekistan':'Uzbequistão','Colombia':'Colômbia',
+  'DR Congo':'RD Congo','England':'Inglaterra','Croatia':'Croácia',
+  'Ghana':'Gana','Panama':'Panamá','Denmark':'Dinamarca',
 };
 
 function buildGroupTable(group, grpData){
