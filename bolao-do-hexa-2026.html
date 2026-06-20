@@ -331,7 +331,12 @@ async function fetchBrazilResults() {
   if (_fixturesCache && (now - _cacheTs) < 120000) return _fixturesCache; // cache 2min
 
   const json = await apiFetch('/fixtures?league=1&season=2026&team=6');
-  if (!json || !json.response) return {};
+  console.log('[API] fixtures response:', JSON.stringify(json).substring(0,500));
+  if (!json || !json.response) {
+    console.warn('[API] Sem resposta ou erro:', json);
+    return {};
+  }
+  console.log('[API] Total fixtures encontrados:', json.response.length);
 
   const results = {};
   for (const gameId in BRAZIL_GAMES_MAP) {
@@ -603,7 +608,7 @@ async function renderPalpitar(){
         <div class="game-meta">📅 ${formatDate(g.date,g.time)} <span class="badge badge-past">Encerrado</span></div>
         <div class="teams-row">
           <div class="team"><span class="team-flag">${g.hf}</span><span class="team-name">${g.home}</span></div>
-          <div class="vs-center"><span style="font-size:20px;font-weight:700;color:#9ca3af">—</span></div>
+          <div class="vs-center" id="score-${g.id}"><span style="font-size:20px;font-weight:700;color:#9ca3af" class="past-score-dash">—</span></div>
           <div class="team"><span class="team-flag">${g.af}</span><span class="team-name">${g.away}</span></div>
         </div>
         <div class="stadium-line">📍 ${g.st}</div>
@@ -1120,8 +1125,27 @@ function copyPix(){
   else{ const ta=document.createElement('textarea'); ta.value=PIX_CODE; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('📋 Código Pix copiado!'); }
 }
 
+async function updatePastScores(){
+  const results = await fetchBrazilResults();
+  console.log('[Scores] Resultados encontrados:', JSON.stringify(results));
+  for(const gameId in results){
+    const r = results[gameId];
+    if(r.status === 'FINISHED' || r.status === 'IN_PLAY'){
+      const el = document.getElementById('score-'+gameId);
+      if(el){
+        const color = r.status === 'IN_PLAY' ? '#dc2626' : '#1a1a1a';
+        el.innerHTML = `<span style="font-size:22px;font-weight:800;font-family:'Barlow Condensed',sans-serif;color:${color}">${r.homeGoals} × ${r.awayGoals}</span>`;
+        if(r.status === 'IN_PLAY'){
+          el.innerHTML += `<div style="font-size:10px;color:#dc2626;font-weight:700;animation:pulse 1s infinite">AO VIVO</div>`;
+        }
+      }
+    }
+  }
+}
+
 renderPalpitar().then(()=>{
   if(countdownInterval) clearInterval(countdownInterval);
+  updatePastScores();
   countdownInterval = setInterval(()=>{
     const next = getNextGame();
     if(!next) return;
