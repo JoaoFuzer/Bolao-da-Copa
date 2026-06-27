@@ -215,6 +215,22 @@
   .modal-btn-cancel { flex: 1; padding: 13px; font-size: 15px; font-weight: 600; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
   .modal-btn-confirm { flex: 2; padding: 13px; font-size: 15px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; background: var(--verde); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; }
 
+  .bracket-round { margin-bottom: 20px; }
+  .bracket-round-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .bracket-match { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 13px; margin-bottom: 8px; }
+  .bracket-match.brasil { border-color: var(--verde); border-width: 2px; }
+  .bracket-team { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; }
+  .bracket-team:first-child { border-bottom: 0.5px solid var(--border); }
+  .bracket-team-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+  .bracket-team-flag { font-size: 0; }
+  .bracket-team-flag .fi { width: 20px !important; height: 15px !important; border-radius: 2px; display: inline-block !important; }
+  .bracket-score { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 800; min-width: 20px; text-align: right; }
+  .bracket-score.winner { color: var(--verde-dark); }
+  .bracket-score.loser { color: var(--text-faint); }
+  .bracket-date { font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+  .bracket-tbd { color: var(--text-faint); font-style: italic; }
+  .bracket-live { font-size: 10px; color: #dc2626; font-weight: 700; animation: pulse 1s infinite; }
+
   @media (max-width: 420px) { .header-title { font-size: 30px; } .team-flag { font-size: 24px; } .tab { font-size: 11px; } }
 </style>
 </head>
@@ -243,11 +259,13 @@
       <button class="tab" onclick="showTab('palpites')"><span class="tab-icon">📋</span>Palpites</button>
       <button class="tab" onclick="showTab('ranking')"><span class="tab-icon">🏅</span>Ranking</button>
       <button class="tab" onclick="showTab('tabela')"><span class="tab-icon">📊</span>Tabela</button>
+      <button class="tab" onclick="showTab('matamata')"><span class="tab-icon">⚔️</span>Mata-mata</button>
     </div>
     <div id="panel-palpitar" class="panel active"><div id="palpitar-content"></div></div>
     <div id="panel-palpites" class="panel"><div id="palpites-content"></div></div>
     <div id="panel-ranking" class="panel"><div id="ranking-content"></div></div>
     <div id="panel-tabela" class="panel"><div id="tabela-content"></div></div>
+    <div id="panel-matamata" class="panel"><div id="matamata-content"></div></div>
   </div>
 </div>
 
@@ -304,7 +322,7 @@ const GAMES = [
   { id:'g1', date:'2026-06-13', time:'19:00', home:'Brasil',  away:'Marrocos',  hf:'<span class="fi fi-br"></span>', af:'<span class="fi fi-ma"></span>', st:'MetLife Stadium · Nova York/NJ' },
   { id:'g2', date:'2026-06-19', time:'21:30', home:'Brasil',  away:'Haiti',     hf:'<span class="fi fi-br"></span>', af:'<span class="fi fi-ht"></span>', st:'Lincoln Financial Field · Filadélfia' },
   { id:'g3', date:'2026-06-24', time:'19:00', home:'Escócia', away:'Brasil',    hf:'<span class="fi fi-gb-sct"></span>', af:'<span class="fi fi-br"></span>', st:'Hard Rock Stadium · Miami' },
-  { id:'g4', date:'2026-06-29', time:'14:00', home:'Brasil',  away:'(Grupo F)', hf:'<span class="fi fi-br"></span>', af:'<span class="fi fi-xx"></span>', st:'NRG Stadium · Houston ou Monterrey' },
+  { id:'g4', date:'2026-06-29', time:'14:00', home:'Brasil',  away:'2º Grupo F (Holanda/Japão)', hf:'<span class="fi fi-br"></span>', af:'<span class="fi fi-nl"></span>', st:'NRG Stadium · Houston, Texas' },
 ];
 
 const GROUPS = [
@@ -383,7 +401,8 @@ function showTab(tab){
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='palpites') renderPalpites();
   if(tab==='ranking') renderRanking();
-  if(tab==='tabela') renderTabela();  
+  if(tab==='tabela') renderTabela();
+  if(tab==='matamata') renderMataMata();
 }
 
 function jsonp(url){
@@ -400,6 +419,11 @@ async function apiGet(action){
   if(!isConfigured()) return [];
   const r=await jsonp(APPS_SCRIPT_URL+'?action='+action);
   return r?r.data||[]:[];
+}
+async function apiGetAllResultados(){
+  if(!isConfigured()) return null;
+  const r=await jsonp(APPS_SCRIPT_URL+'?action=resultados');
+  return r||null;
 }
 async function apiGetStandings(){
   if(!isConfigured()) return null;
@@ -1036,6 +1060,88 @@ function renderAllStatic(filter){
 
 function renderStandingsGroup(standings, group){ renderAllStandings(standings, group); }
 function renderStandingsStatic(group){ renderAllStatic(group); }
+
+function flagSpan(code){ return `<span class="fi ${code}"></span>`; }
+
+const MATA_MATA = [
+  {
+    round: '16 Avos de Final', icon: '32',
+    matches: [
+      { id:'mm01', date:'29/06', home:'Brasil', hf:'fi-br', away:'2º Grupo F', af:'fi-nl', homeScore:null, awayScore:null, brasil:true },
+      { id:'mm02', date:'29/06', home:'1º Grupo A', hf:'fi-mx', away:'3º Grupo (CEFHI)', af:'', homeScore:null, awayScore:null },
+      { id:'mm03', date:'29/06', home:'1º Grupo B', hf:'fi-ca', away:'3º Grupo (ADGJ)', af:'', homeScore:null, awayScore:null },
+      { id:'mm04', date:'29/06', home:'1º Grupo D', hf:'fi-us', away:'3º Grupo (BEFKL)', af:'', homeScore:null, awayScore:null },
+      { id:'mm05', date:'30/06', home:'1º Grupo E', hf:'fi-de', away:'3º Grupo (ABCIL)', af:'', homeScore:null, awayScore:null },
+      { id:'mm06', date:'30/06', home:'1º Grupo G', hf:'fi-be', away:'3º Grupo (AHIJK)', af:'', homeScore:null, awayScore:null },
+      { id:'mm07', date:'30/06', home:'1º Grupo I', hf:'fi-fr', away:'3º Grupo (DEFJL)', af:'', homeScore:null, awayScore:null },
+      { id:'mm08', date:'30/06', home:'1º Grupo K', hf:'fi-pt', away:'3º Grupo (BCDFG)', af:'', homeScore:null, awayScore:null },
+      { id:'mm09', date:'01/07', home:'1º Grupo C', hf:'fi-br', away:'2º Grupo L', af:'fi-gb-eng', homeScore:null, awayScore:null },
+      { id:'mm10', date:'01/07', home:'1º Grupo H', hf:'fi-es', away:'2º Grupo J', af:'fi-ar', homeScore:null, awayScore:null },
+      { id:'mm11', date:'01/07', home:'1º Grupo L', hf:'fi-gb-eng', away:'2º Grupo K', af:'fi-co', homeScore:null, awayScore:null },
+      { id:'mm12', date:'01/07', home:'1º Grupo J', hf:'fi-ar', away:'2º Grupo H', af:'fi-uy', homeScore:null, awayScore:null },
+      { id:'mm13', date:'02/07', home:'2º Grupo A', hf:'fi-kr', away:'2º Grupo C', af:'fi-ma', homeScore:null, awayScore:null },
+      { id:'mm14', date:'02/07', home:'2º Grupo D', hf:'fi-tr', away:'2º Grupo B', af:'fi-ch', homeScore:null, awayScore:null },
+      { id:'mm15', date:'02/07', home:'2º Grupo G', hf:'fi-eg', away:'2º Grupo E', af:'fi-de', homeScore:null, awayScore:null },
+      { id:'mm16', date:'02/07', home:'2º Grupo I', hf:'fi-fr', away:'2º Grupo J', af:'fi-ar', homeScore:null, awayScore:null },
+    ]
+  },
+];
+
+async function renderMataMata(){
+  const el=document.getElementById('matamata-content');
+  el.innerHTML=`<div class="loading-inline"><span class="spinner"></span> Carregando...</div>`;
+
+  // Buscar resultados para atualizar o mata-mata
+  const resp = await apiGetAllResultados();
+  const resultados = resp ? resp.data : {};
+
+  // Atualizar adversário do g4 (Brasil nas oitavas) dinamicamente
+  if(resultados){
+    // 2º do Grupo F = quem ficou em 2º entre Holanda, Japão, Tunísia, Suécia
+    const grupoF = ['F1','F2','F3','F4','F5','F6'];
+  }
+
+  let h = '';
+  h += `<div class="caminho-box">
+    <h4>${flagSpan('fi-br')} Caminho do Brasil</h4>
+    <div class="caminho-jogo" style="font-size:12px;line-height:2">
+      <strong>29/jun</strong> · 16 Avos — vs 2º Grupo F (Holanda/Japão) · Houston<br>
+      <strong>05/jul</strong> · Oitavas — vs vencedor (2ºE × 2ºI) · Nova Jersey<br>
+      <strong>11/jul</strong> · Quartas — a definir · Miami<br>
+      <strong>15/jul</strong> · Semifinal — a definir · Atlanta<br>
+      <strong>19/jul</strong> · <strong style="color:var(--verde-dark)">FINAL</strong> — a definir · Nova Jersey
+    </div>
+  </div>`;
+
+  for(const round of MATA_MATA){
+    h+=`<p class="sec-title"><span class="sec-dot"></span>${round.icon ? '⚔️ ' : ''}${round.round}</p>`;
+    for(const m of round.matches){
+      const isBr = m.brasil || m.home.includes('Brasil') || m.away.includes('Brasil');
+      const finished = m.homeScore !== null && m.awayScore !== null;
+      const hWin = finished && m.homeScore > m.awayScore;
+      const aWin = finished && m.awayScore > m.homeScore;
+      h+=`<div class="bracket-match${isBr?' brasil':''}">
+        <div class="bracket-team">
+          <div class="bracket-team-name">
+            ${m.hf?`<span class="bracket-team-flag">${flagSpan(m.hf)}</span>`:''}
+            <span>${m.home}</span>
+          </div>
+          <span class="bracket-score${finished?(hWin?' winner':' loser'):''}">${finished?m.homeScore:'—'}</span>
+        </div>
+        <div class="bracket-team">
+          <div class="bracket-team-name">
+            ${m.af?`<span class="bracket-team-flag">${flagSpan(m.af)}</span>`:''}
+            <span class="${m.away.includes('º')||m.away.includes('vencedor')?'bracket-tbd':''}">${m.away}</span>
+          </div>
+          <span class="bracket-score${finished?(aWin?' winner':' loser'):''}">${finished?m.awayScore:'—'}</span>
+        </div>
+        <div class="bracket-date">📅 ${m.date}</div>
+      </div>`;
+    }
+  }
+
+  el.innerHTML=h;
+}
 
 function copyPixModal(){
   if(navigator.clipboard){ navigator.clipboard.writeText(PIX_CODE).then(()=>showToast('📋 Código Pix copiado!')); }
