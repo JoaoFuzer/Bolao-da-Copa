@@ -1175,7 +1175,7 @@ async function renderMataMata(){
   el.innerHTML = h;
 }
 
-function copyPixModal(){function copyPixModal(){function copyPixModal(){function copyPixModal(){
+function copyPixModal(){
   if(navigator.clipboard){ navigator.clipboard.writeText(PIX_CODE).then(()=>showToast('📋 Código Pix copiado!')); }
   else{ const ta=document.createElement('textarea'); ta.value=PIX_CODE; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('📋 Código Pix copiado!'); }
 }
