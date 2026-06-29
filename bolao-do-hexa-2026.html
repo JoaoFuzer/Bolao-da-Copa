@@ -1146,8 +1146,17 @@ async function renderMataMata(){
     'mm11': [BRACKET_LEFT,7],  'mm12': [BRACKET_RIGHT,3],
     'mm13': [BRACKET_RIGHT,5], 'mm14': [BRACKET_RIGHT,4],
     'mm15': [BRACKET_RIGHT,6], 'mm16': [BRACKET_RIGHT,7],
-    'g4':   [BRACKET_RIGHT,0],
+    'g4':   [BRACKET_RIGHT,0], // fallback para ID antigo
   };
+  // mm02 e g4 apontam para o mesmo jogo (Brasil x Japão)
+  // Priorizar mm02 se existir
+  if(res['mm02'] && res['mm02'].homeGoals !== null){
+    BRACKET_RIGHT[0].hs = res['mm02'].homeGoals;
+    BRACKET_RIGHT[0].as = res['mm02'].awayGoals;
+  } else if(res['g4'] && res['g4'].homeGoals !== null){
+    BRACKET_RIGHT[0].hs = res['g4'].homeGoals;
+    BRACKET_RIGHT[0].as = res['g4'].awayGoals;
+  }
   for(var id in mmMap){
     if(res[id] && res[id].homeGoals !== null && res[id].awayGoals !== null){
       var arr = mmMap[id][0];
