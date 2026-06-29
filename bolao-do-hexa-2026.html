@@ -542,8 +542,9 @@ async function renderPalpitar(){
         <div class="teams-row">
           <div class="team"><span class="team-flag">${g.hf}</span><span class="team-name">${g.home}</span></div>
           <div class="vs-center">${(()=>{
-            // Busca resultado: primeiro em _resultadosCache (todos os jogos), depois em _totaisCache (só brasil)
-            const res = (window._resultadosCache&&window._resultadosCache[g.id]) ||
+            // Busca resultado: tenta ID direto, alias mm02 para g4, e _totaisCache
+            const aliasId = g.id==='g4'?'mm02':g.id;
+            const res = (window._resultadosCache&&(window._resultadosCache[g.id]||window._resultadosCache[aliasId])) ||
                         (window._totaisCache&&window._totaisCache[g.id]&&window._totaisCache[g.id].resultado);
             if(res&&res.homeGoals!=null&&res.awayGoals!=null&&!isNaN(res.homeGoals)){
               const c=res.status==='IN_PLAY'?'#dc2626':'#1a1a1a';
@@ -1134,7 +1135,10 @@ async function renderMataMata(){
   if(!el) return;
 
   var resp = await apiGetAllResultados();
+  console.log('[MataMata] resp:', JSON.stringify(resp).substring(0,500));
   var res = resp ? resp.data : {};
+  console.log('[MataMata] mm02:', JSON.stringify(res['mm02']));
+  console.log('[MataMata] g4:', JSON.stringify(res['g4']));
 
   // Mapear IDs da planilha para os arrays do chaveamento
   var mmMap = {
